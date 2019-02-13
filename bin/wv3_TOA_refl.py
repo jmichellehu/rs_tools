@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # requires gdal and geoio from https://github.com/DigitalGlobe/geoio
-# uses functions created by dshean's dgtools github repo
+# uses functions created by dshean (dgtools github repo)
 
-# This script calculates TOA reflectance for WorldView-3 Level 1-B imagery using user inputted XML file
+# This script calculates TOA reflectance for WorldView-3 Level 1-B imagery using user input XML file
 
 # import libraries
 import math
