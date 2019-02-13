@@ -8,7 +8,7 @@ Most functions in WorldView-3 TOA calculations adapted from dshean's dgtools rep
 
 - Landsat 8
 *(from command line):*
-python L8_TOA_refl.py -in --multiband_tiff -M --reflectance_multiplication_value -A --reflectance_addition_value -sun --sun_elevation -out --output_toa_refl_filename
+python L8_TOA_refl.py -in --multiband_tiff -in_MTL --MTL_filename -out --output_toa_refl_filename
 
 - WorldView-3
 *(from command line):*
