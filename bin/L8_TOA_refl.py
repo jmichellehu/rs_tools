@@ -13,7 +13,7 @@ import argparse
 import re
 
 # Have user define input data from MTL file and output filename
-parser = argparse.ArgumentParser(description='GeoTiff Landsat 8 Multispectral Image to TOA Reflection Image Conversion Script')
+parser = argparse.ArgumentParser(description='GeoTiff Landsat 8 Multispectral Image to TOA Reflectance Script')
 
 parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
 # parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
@@ -47,7 +47,7 @@ def get_val(some_list):
     return(vals)
 
 
-### --- Extract Mp, Ap, and sunelev values from MTL files --- ###
+### --- Extract Mp, Ap, and sunelev values from MTL file --- ###
 mtl_list = []
 
 with open(in_MTL_filename, 'r') as f:
@@ -75,11 +75,6 @@ Mp_val = get_val(Mp_list)
 Ap_val = get_val(Ap_list)
 Sun_val = get_val(Sun_list)
 
-# extract corresponding value (i.e. the bit after " = ")
-Mp_val = get_val(Mp_list)
-Ap_val = get_val(Ap_list)
-Sun_val = get_val(Sun_list)
-
 # Check that each band has the same value for Mp and Ap, and save extracted values as floats in the Mp, Ap, and sunel variables to be used in L8_toa_refl calculations.  Otherwise, flag it and tell the user to check the MTL file
 
 if check_equal(Mp_val):
@@ -95,15 +90,17 @@ else:
     print(Ap_list)
 
 if (float(Sun_val[1]) <= 90.0 and float(Sun_val[1]) >=0.0):
-    sunelev = Sun_val[1]
+    sunelev = float(Sun_val[1])
 else:
     print("Sun elevation value out of bounds, examine MTL file")
     print(Sun_val)
 
+print(Mp, Ap, sunelev)
+
 ######## --------- CONVERT TO TOA REFLECTANCE --------- ########
 
- # Open the multiband landsat image
- img=geoio.GeoImage(in_filename)
+# Open the multiband landsat image
+img=geoio.GeoImage(in_filename)
 
 # Numpy arrays of tif
 data=img.get_data()
