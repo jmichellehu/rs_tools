@@ -1,7 +1,6 @@
 ### Repository for general remote sensing scripts
 
-Includes top-of-atmosphere (TOA) reflectance calculations for Landsat 8 (currently requires user input from included MTL, XML files, data scraping code in the future) and WorldView-3 input tiffs.  
-Most functions in WorldView-3 TOA calculations adapted from dshean's dgtools repo.
+Includes top-of-atmosphere (TOA) reflectance calculations for Landsat 8 and WorldView-3 input tiffs.  Requires corresponding MTL and XML files.  Most functions in WorldView-3 TOA calculations adapted from dshean's dgtools repo.
 
 
 #### *Usage:*
