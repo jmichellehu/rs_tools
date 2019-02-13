@@ -16,9 +16,9 @@ parser = argparse.ArgumentParser(description='GeoTiff Landsat 8 Multispectral Im
 
 parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
 # parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
-parser.add_argument('-M', '--input_Mp', help='GeoTiff multi band Reflectance Multiplication inputs', required=True)
-parser.add_argument('-A', '--input_Ap', help='GeoTiff multi band Reflectance Multiplication inputs', required=True)
-parser.add_argument('-sun', '--input_SunEl', help='GeoTiff multi band Reflectance Multiplication inputs', required=True)
+parser.add_argument('-M', '--input_Mp', help='GeoTiff multi band Reflectance Multiplication input', required=True)
+parser.add_argument('-A', '--input_Ap', help='GeoTiff multi band Reflectance Addition input', required=True)
+parser.add_argument('-sun', '--input_SunEl', help='GeoTiff multi band Sun Elevation input', required=True)
 parser.add_argument('-out', '--output_file', help='Where TOA reflectance image is to be saved', required=True)
 args = parser.parse_args()
 
