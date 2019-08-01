@@ -2,7 +2,7 @@
 # requires gdal and geoio from https://github.com/DigitalGlobe/geoio
 # uses functions created by dshean (dgtools github repo)
 
-# This script calculates TOA reflectance for WorldView-3 Level 1-B imagery using user input XML file
+# This script calculates TOA reflectance for WorldView-3 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
 
 # import libraries
 import math
@@ -46,43 +46,43 @@ EsunDict = {
 }
 #WV3 Gain band values
 GainDict = {
-'WV03_BAND_P':0.923,
-'WV03_BAND_C':0.863,
-'WV03_BAND_B':0.905,
-'WV03_BAND_G':0.907,
-'WV03_BAND_Y':0.938,
-'WV03_BAND_R':0.945,
-'WV03_BAND_RE':0.980,
-'WV03_BAND_N':0.982,
-'WV03_BAND_N2':0.954,
-'WV03_BAND_S1':1.160,
-'WV03_BAND_S2':1.184,
-'WV03_BAND_S3':1.173,
-'WV03_BAND_S4':1.187,
-'WV03_BAND_S5':1.286,
-'WV03_BAND_S6':1.336,
-'WV03_BAND_S7':1.340,
-'WV03_BAND_S8':1.392
+'WV03_BAND_P':0.950,
+'WV03_BAND_C':0.905,
+'WV03_BAND_B':0.940,
+'WV03_BAND_G':0.938,
+'WV03_BAND_Y':0.962,
+'WV03_BAND_R':0.964,
+'WV03_BAND_RE':1.000,
+'WV03_BAND_N':0.961,
+'WV03_BAND_N2':0.978,
+'WV03_BAND_S1':1.200,
+'WV03_BAND_S2':1.227,
+'WV03_BAND_S3':1.199,
+'WV03_BAND_S4':1.196,
+'WV03_BAND_S5':1.262,
+'WV03_BAND_S6':1.314,
+'WV03_BAND_S7':1.346,
+'WV03_BAND_S8':1.376,
 }
 #WV3 Offset band values
 OffsetDict = {
-'WV03_BAND_P':-1.700,
-'WV03_BAND_C':-7.154,
-'WV03_BAND_B':-4.189,
-'WV03_BAND_G':-3.287,
-'WV03_BAND_Y':-1.816,
-'WV03_BAND_R':-1.350,
-'WV03_BAND_RE':-2.617,
-'WV03_BAND_N':-3.752,
-'WV03_BAND_N2':-1.507,
-'WV03_BAND_S1':-4.479,
-'WV03_BAND_S2':-2.248,
-'WV03_BAND_S3':-1.806,
-'WV03_BAND_S4':-1.507,
-'WV03_BAND_S5':-0.622,
-'WV03_BAND_S6':-0.605,
-'WV03_BAND_S7':-0.423,
-'WV03_BAND_S8':-0.302,
+'WV03_BAND_P':-3.629,
+'WV03_BAND_C':-8.604,
+'WV03_BAND_B':-5.809,
+'WV03_BAND_G':-4.996,
+'WV03_BAND_Y':-3.649,
+'WV03_BAND_R':-3.021,
+'WV03_BAND_RE':-4.521,
+'WV03_BAND_N':-5.522,
+'WV03_BAND_N2':-2.992,
+'WV03_BAND_S1':-5.546,
+'WV03_BAND_S2':-2.600,
+'WV03_BAND_S3':-2.309,
+'WV03_BAND_S4':-1.676,
+'WV03_BAND_S5':-0.705,
+'WV03_BAND_S6':-0.669,
+'WV03_BAND_S7':-0.512,
+'WV03_BAND_S8':-0.372,
 }
 
 # WV order (0-based indexing)
