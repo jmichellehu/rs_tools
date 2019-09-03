@@ -2,7 +2,8 @@
 # requires gdal and geoio from https://github.com/DigitalGlobe/geoio
 # uses functions created by dshean (dgtools github repo)
 
-# This script calculates TOA reflectance for WorldView-3 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
+# This script calculates TOA reflectance for WorldView-2 and -33 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - 
+https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
 
 # import libraries
 import math
@@ -12,7 +13,7 @@ import argparse, numpy as np, gdal, struct, sys
 from datetime import datetime, timedelta
 
 # Have user define input bands and output filename
-parser = argparse.ArgumentParser(description='GeoTiff WV-3 Multispectral Image to TOA Reflection Image Conversion Script')
+parser = argparse.ArgumentParser(description='GeoTiff WorldView Multispectral Image to TOA Reflection Image Conversion Script')
 parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
 parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
 parser.add_argument('-in_x', '--input_xml', help='GeoTiff multi band xml file', required=True)
@@ -26,6 +27,16 @@ out_fn = args.output_file
 
 # Irradiance dictionary band values
 EsunDict = {
+'WV02_BAND_P':1571.36,
+'WV02_BAND_C':1773.81,
+'WV02_BAND_B':2007.27,
+'WV02_BAND_G':1829.62,
+'WV02_BAND_Y':1701.85,
+'WV02_BAND_R':1538.85,
+'WV02_BAND_RE':1346.09,
+'WV02_BAND_N':1053.21,
+'WV02_BAND_N2':856.599,
+
 'WV03_BAND_P':1574.41,
 'WV03_BAND_C':1757.89,
 'WV03_BAND_B':2004.61,
@@ -44,8 +55,19 @@ EsunDict = {
 'WV03_BAND_S7':76.9507,
 'WV03_BAND_S8':68.0988
 }
-#WV3 Gain band values
+
+#WV Gain band values
 GainDict = {
+'WV02_BAND_P':0.942,
+'WV02_BAND_C':1.151,
+'WV02_BAND_B':0.988,
+'WV02_BAND_G':0.936,
+'WV02_BAND_Y':0.949,
+'WV02_BAND_R':0.952,
+'WV02_BAND_RE':0.974,
+'WV02_BAND_N':0.961,
+'WV02_BAND_N2':1.002,
+
 'WV03_BAND_P':0.950,
 'WV03_BAND_C':0.905,
 'WV03_BAND_B':0.940,
@@ -55,6 +77,7 @@ GainDict = {
 'WV03_BAND_RE':1.000,
 'WV03_BAND_N':0.961,
 'WV03_BAND_N2':0.978,
+
 'WV03_BAND_S1':1.200,
 'WV03_BAND_S2':1.227,
 'WV03_BAND_S3':1.199,
@@ -64,8 +87,19 @@ GainDict = {
 'WV03_BAND_S7':1.346,
 'WV03_BAND_S8':1.376,
 }
-#WV3 Offset band values
+
+#WV Offset band values
 OffsetDict = {
+'WV02_BAND_P':-2.704,
+'WV02_BAND_C':-7.478,
+'WV02_BAND_B':-5.736,
+'WV02_BAND_G':-3.546,
+'WV02_BAND_Y':-3.564,
+'WV02_BAND_R':-2.512,
+'WV02_BAND_RE':-4.120,
+'WV02_BAND_N':-3.300,
+'WV02_BAND_N2':-2.891,
+
 'WV03_BAND_P':-3.629,
 'WV03_BAND_C':-8.604,
 'WV03_BAND_B':-5.809,
@@ -75,6 +109,7 @@ OffsetDict = {
 'WV03_BAND_RE':-4.521,
 'WV03_BAND_N':-5.522,
 'WV03_BAND_N2':-2.992,
+
 'WV03_BAND_S1':-5.546,
 'WV03_BAND_S2':-2.600,
 'WV03_BAND_S3':-2.309,
@@ -87,6 +122,16 @@ OffsetDict = {
 
 # WV order (0-based indexing)
 OrderDict = {
+'WV02_BAND_P':0,
+'WV02_BAND_C':1,
+'WV02_BAND_B':2,
+'WV02_BAND_G':3,
+'WV02_BAND_Y':4,
+'WV02_BAND_R':5,
+'WV02_BAND_RE':6,
+'WV02_BAND_N':7,
+'WV02_BAND_N2':8,
+
 'WV03_BAND_C':0,
 'WV03_BAND_B':1,
 'WV03_BAND_G':2,
@@ -107,6 +152,7 @@ OrderDict = {
 
 
 img=geoio.GeoImage(in_fn)
+
 # open tif as numpy array
 data=img.get_data()
 
