@@ -2,8 +2,7 @@
 # requires gdal and geoio from https://github.com/DigitalGlobe/geoio
 # uses functions created by dshean (dgtools github repo)
 
-# This script calculates TOA reflectance for WorldView-2 and -33 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - 
-https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
+# This script calculates TOA reflectance for WorldView-2 and -3 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
 
 # import libraries
 import math
