@@ -40,8 +40,11 @@ do
   zone=${z}
 done < ${utm_file}
 
-echo ${NED%.*}_${zone}.tif
-dem=${NED%.*}_${zone}.tif
+echo ${NED%.*}-adj_${zone}.tif
+dem=${NED%.*}-adj_${zone}.tif
+
+# dem_geoid --reverse-adjustment ${NED%.*}.img
+gdalwarp -t_srs EPSG:${zone} ${NED%.*}-adj.tif ${dem}
 
 # Need to incorporate handling for multiple dems --> vrt mosaic
 # dem=${img%.*}.vrt
