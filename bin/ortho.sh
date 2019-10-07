@@ -2,19 +2,20 @@
 
 # Script to identify and NED tiles that intersect with input imagery and orthorectify
 
+# Usage:
+# ./ortho.sh img.NTF
 
 ### # TODO:
 # Need to incorporate handling for multiple dems --> vrt mosaic
 # Need to put things into python scripts -- all these steps are unnecessary
-
-# Usage:
-# ./ortho.sh img.NTF
 
 set -e
 
 # Input image
 img=$1
 xml=${img%.*}.xml
+
+echo ./ortho.sh ${img}
 
 # cleanup=true
 
@@ -23,8 +24,6 @@ utm_file=utm_zone.txt
 NED_names=NED.txt
 
 python $HOME/git_dirs/rs_tools/bin/utm_convert.py -in ${img} 2>&1 | tee ${utm_file}
-
-echo ${img}
 
 while read z
 do
