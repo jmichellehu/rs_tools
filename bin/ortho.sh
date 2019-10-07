@@ -25,15 +25,20 @@ NED_names=NED.txt
 
 python $HOME/git_dirs/rs_tools/bin/utm_convert.py -in ${img} 2>&1 | tee ${utm_file}
 
+# Extract geographic coordinates for the input image
+GCS_file=GCS_coords.txt
+
+python $HOME/git_dirs/NED_download/bin/get_NED.py -in ${img} -NED 13 2>&1 | tee ${GCS_file}
+
+while read NED_filename
+do
+  NED=$(echo ${NED_filename} | tr "/" "\n" | tail -1)
+done < ${GCS_file}
+
 while read z
 do
   zone=${z}
 done < ${utm_file}
-
-while read n
-do
-  NED=${n}
-done < ${NED_names}
 
 echo ${NED%.*}_${zone}.tif
 dem=${NED%.*}_${zone}.tif
@@ -45,6 +50,5 @@ dem=${NED%.*}_${zone}.tif
 $HOME/git_dirs/wv3_classification/code/working/wv3_ortho_resample.sh $img $dem "1.24" EPSG:${zone}
 
 if $cleanup ; then
-    rm ${NED_names}
     rm ${utm_file}
 fi
