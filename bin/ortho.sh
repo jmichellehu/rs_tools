@@ -43,8 +43,9 @@ done < ${utm_file}
 echo ${NED%.*}-adj_${zone}.tif
 dem=${NED%.*}-adj_${zone}.tif
 
-# dem_geoid --reverse-adjustment ${NED%.*}.img
-gdalwarp -t_srs EPSG:${zone} ${NED%.*}-adj.tif ${dem}
+if [ ! -f $dem ] ; then
+    dem_geoid --reverse-adjustment ${NED%.*}.img ; gdalwarp -co COMPRESS=LZW -co TILED=YES -co BIGTIFF=IF_SAFER -overwrite -r cubic -t_srs EPSG:${zone} -dstnodata -9999 -tr 10 10 ${NED%.*}-adj.tif ${dem}
+fi
 
 # Need to incorporate handling for multiple dems --> vrt mosaic
 # dem=${img%.*}.vrt
