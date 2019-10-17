@@ -16,9 +16,8 @@ echo "./ortho.sh ${img}"
 
 # Extract geographic coordinates for the input image
 GCS_file=GCS_coords.txt
-NED_names=NED.txt
-utm_file=utm_zone.txt
 dem_list=dem_list.txt
+utm_file=utm_zone.txt
 utm_list=utm_list.txt
 new_dem_list=same_proj.txt
 
