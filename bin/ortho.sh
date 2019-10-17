@@ -6,8 +6,6 @@
 # ./ortho.sh img.NTF
 
 ### # TODO:
-# Need to incorporate handling for multiple dems --> vrt mosaic
-# Need to put things into python scripts -- all these steps are unnecessary
 
 set -e
 
@@ -20,39 +18,53 @@ echo ./ortho.sh ${img}
 # cleanup=true
 
 # Extract geographic coordinates for the input image
-utm_file=utm_zone.txt
-NED_names=NED.txt
-
-python $HOME/git_dirs/rs_tools/bin/utm_convert.py -in ${img} 2>&1 | tee ${utm_file}
-
-# Extract geographic coordinates for the input image
 GCS_file=GCS_coords.txt
+NED_names=NED.txt
+utm_file=utm_zone.txt
+dem_list=dem_list.txt
 
-python $HOME/git_dirs/NED_download/bin/get_NED.py -in ${img} -NED 13 2>&1 | tee ${GCS_file}
-
-while read NED_filename
-do
-  NED=$(echo ${NED_filename} | tr "/" "\n" | tail -1)
-done < ${GCS_file}
-
+# Extract UTM zone epsg code from image center
+python $HOME/git_dirs/rs_tools/bin/utm_convert.py -in ${img} | tail -n 1 | tee ${utm_file} 
 while read z
 do
   zone=${z}
 done < ${utm_file}
 
-echo ${NED%.*}-adj_${zone}.tif
-dem=${NED%.*}-adj_${zone}.tif
+python $HOME/git_dirs/NED_download/bin/get_NED.py -in ${img} -NED 13 2>&1 | tee ${GCS_file}
+while read NED_filename
+do
+    NED=$(echo ${NED_filename} | tr "/" "\n" | tail -1)
+    echo "NED is ${NED}"
+    python $HOME/git_dirs/rs_tools/bin/utm_convert.py -in ${NED%.*}.img | tail -n 1 | tee ${utm_file} 
 
-if [ ! -f $dem ] ; then
-    dem_geoid --reverse-adjustment ${NED%.*}.img ; gdalwarp -co COMPRESS=LZW -co TILED=YES -co BIGTIFF=IF_SAFER -overwrite -r cubic -t_srs EPSG:${zone} -dstnodata -9999 -tr 10 10 ${NED%.*}-adj.tif ${dem}
-fi
+    while read z
+    do
+      zone=${z}
+    done < ${utm_file}
+    dem=${NED%.*}-adj_${zone}.tif
+    echo ${dem} >> ${dem_list}
+    
+    if [ ! -f ${dem} ] ; then
+        if [ ! -f ${NED%.*}-adj.img ] ; then
+            dem_geoid --reverse-adjustment ${NED%.*}.img ; 
+        fi
+        gdalwarp -co COMPRESS=LZW -co TILED=YES -co BIGTIFF=IF_SAFER -overwrite -r cubic -t_srs EPSG:${zone} -dstnodata -9999 -tr 10 10 ${NED%.*}-adj.tif ${dem}
+    
+    fi
+    
+done < ${GCS_file}
 
-# Need to incorporate handling for multiple dems --> vrt mosaic
-# dem=${img%.*}.vrt
-# gdalbuildvrt -input_file_list ${NED_names}* ${img%.*}.vrt
+# dem_vrt=${img%.*}_NED_13.vrt
+# if [ ! -f ${dem_vrt} ]; then
+#     echo "Building vrt of dems..."
+#     # Build vrt of image
+#     gdalbuildvrt -input_file_list ${dem_list} ${dem_vrt}
+# else
+#     echo "NED vrt already exists"
+# fi
 
-$HOME/git_dirs/wv3_classification/code/working/wv3_ortho_resample.sh $img $dem "1.24" EPSG:${zone}
+# $HOME/git_dirs/wv3_classification/code/working/wv3_ortho_resample.sh $img $dem_vrt "1.24" EPSG:${zone}
 
-if $cleanup ; then
-    rm ${utm_file}
-fi
+# if $cleanup ; then
+#     rm ${utm_file} ${GCS_file} ${NED_names} ${utm_file} ${dem_list}
+# fi
