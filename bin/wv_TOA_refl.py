@@ -6,7 +6,8 @@
 
 # import libraries
 import math
-import geoio
+import rasterio as rio
+# import geoio
 from gdalconst import *
 import argparse, numpy as np, gdal, struct, sys
 from datetime import datetime, timedelta
@@ -149,11 +150,11 @@ OrderDict = {
 'WV03_BAND_S8':7
 }
 
-
-img=geoio.GeoImage(in_fn)
-
 # open tif as numpy array
-data=img.get_data()
+with rio.open(in_fn) as f:
+    data=f.read()
+    ndv=f.nodata
+    prof=f.profile
 
 def getTag(xml_fn, tag):
     import xml.etree.ElementTree as ET
@@ -209,11 +210,9 @@ def toa_refl(xml_fn=xml_fn, band=in_band):
     esd = calcEarthSunDist(dt)
     print(msunel, sunang, dt, esd)
     toa_rad_coeff = toa_rad(xml_fn)
-
     print("AbsCalFactor/EffBW is ", toa_rad_coeff)
-
     TOA_refl = (gain * data * toa_rad_coeff + offset) * (esd**2 * np.pi) / (Esun * np.cos(np.radians(sunang)))
-    img.write_img_like_this(out_fn, TOA_refl)
+    return TOA_refl
 
 def calcEarthSunDist(dt):
     """Calculate Earth-Sun distance
@@ -232,11 +231,25 @@ def calcEarthSunDist(dt):
         month = month + 12
     a = int(year/100.)
     b = 2 - a + int(a/4.)
-    #jd = timelib.dt2jd(dt)
     jd = int(365.25*(year+4716)) + int(30.6001*(month+1)) + day + (ut/24) + b - 1524.5
     g = 357.529 + 0.98560028 * (jd-2451545.0)
     d = 1.00014 - 0.01671 * np.cos(np.radians(g)) - 0.00014 * np.cos(np.radians(2*g))
     return d
     print("Earth-sun distance", d)
 
-toa_refl()
+TOA_arr=toa_refl()
+TOA_arr[data==ndv] = ndv
+
+with rio.Env():
+    profile = prof
+
+    # And then change the band count to 1, set the
+    # dtype to float 32, and specify LZW compression.
+    profile.update(
+        dtype=rio.float32,
+        count=1,
+        compress='lzw')
+
+    with rio.open(out_fn, 'w', **profile) as dst:
+        dst.write(np.squeeze(TOA_arr).astype(rio.float32), 1)
+
