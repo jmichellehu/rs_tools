@@ -44,6 +44,7 @@ EsunDict = {
 'WV03_BAND_RE':1348.08,
 'WV03_BAND_N':1055.94,
 'WV03_BAND_N2':858.77,
+    
 'WV03_BAND_S1':479.019,
 'WV03_BAND_S2':263.797,
 'WV03_BAND_S3':225.283,
@@ -130,6 +131,8 @@ OrderDict = {
 'WV02_BAND_N':7,
 'WV02_BAND_N2':8,
 
+'WV03_BAND_P':0,
+    
 'WV03_BAND_C':0,
 'WV03_BAND_B':1,
 'WV03_BAND_G':2,
@@ -138,6 +141,7 @@ OrderDict = {
 'WV03_BAND_RE':5,
 'WV03_BAND_N':6,
 'WV03_BAND_N2':7,
+    
 'WV03_BAND_S1':0,
 'WV03_BAND_S2':1,
 'WV03_BAND_S3':2,
@@ -180,15 +184,15 @@ def toa_rad(xml_fn, band=in_band):
     sat = getTag(xml_fn, 'SATID')
     band = band.upper()
     key = '%s_BAND_%s' % (sat, band)
-
     abscal = np.array((getAllTag(xml_fn, 'ABSCALFACTOR')), dtype=float)
     effbw = np.array((getAllTag(xml_fn, 'EFFECTIVEBANDWIDTH')), dtype=float)
+#     print(abscal, effbw)
     #Multiply L1B DN by this to obtain top-of-atmosphere spectral radiance image pixels
     toa_rad_coeff_list = abscal/effbw
     toa_rad_coeff = toa_rad_coeff_list[OrderDict[key]]
     return toa_rad_coeff
 
-def toa_refl(xml_fn=xml_fn, band=in_band):
+def toa_refl(xml_fn, band):
     """Calculate scaling factor for top-of-atmosphere reflectance
     """
     #These need to be pulled out by individual band
@@ -200,7 +204,6 @@ def toa_refl(xml_fn=xml_fn, band=in_band):
     Esun = EsunDict[key]
     gain = GainDict[key]
     offset = OffsetDict[key]
-
     print(sat, key, Esun, gain, offset)
     msunel = float(getTag(xml_fn, 'MEANSUNEL'))
     sunang = 90.0 - msunel
@@ -223,7 +226,7 @@ def calcEarthSunDist(dt):
     minute = dt.minute
     sec = dt.second
     ut = hr + (minute/60.) + (sec/3600.)
-    #print ut
+    #print out
     if month <= 2:
         year = year - 1
         month = month + 12
@@ -232,10 +235,11 @@ def calcEarthSunDist(dt):
     jd = int(365.25*(year+4716)) + int(30.6001*(month+1)) + day + (ut/24) + b - 1524.5
     g = 357.529 + 0.98560028 * (jd-2451545.0)
     d = 1.00014 - 0.01671 * np.cos(np.radians(g)) - 0.00014 * np.cos(np.radians(2*g))
+#     print("Earth-sun distance", d)
     return d
-    print("Earth-sun distance", d)
 
-TOA_arr=toa_refl()
+
+TOA_arr=toa_refl(xml_fn, in_band)
 TOA_arr[data==ndv] = ndv
 
 with rio.Env():
