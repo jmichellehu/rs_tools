@@ -192,6 +192,10 @@ if z is None:
     print(epsg)
 
 if c is not None:
+    xmin=l
+    ymin=b
+    xmax=r
+    ymax=t
     min_easting, min_northing, _, _=utm.from_latlon(ymin, xmin)
     max_easting, max_northing, _, _=utm.from_latlon(ymax, xmax)
     print(min_easting, min_northing, max_easting, max_northing)
