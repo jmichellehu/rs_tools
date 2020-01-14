@@ -7,7 +7,7 @@
 # bounds rounded to the  that intersect the spatial extent extracted from geotransform information of an input image.  Large parts of this code are sourced from David Shean's dgtools repository and from https://gis.stackexchange.com/questions/57834/how-to-get-raster-corner-coordinates-using-python-gdal-bindings
 
 # Usage from command line:
-# python utm_convert.py -in image.tif
+# python utm_convert.py -in image.tif -L left -B bottom -R right -T top
 
 # output format
 # text file of corresponding utm zones for contiguous US
@@ -16,10 +16,20 @@ import utm
 import argparse, gdal, osr, math
 
 parser = argparse.ArgumentParser(description='Geographic coordinates to UTM zone converter')
-parser.add_argument('-in', '--input_file', help='GeoTiff image file', required=True)
+parser.add_argument('-in', '--input_file', help='GeoTiff image file', required=False)
+parser.add_argument('-L', '--left', help='Leftmost bound', required=False, type=float)
+parser.add_argument('-B', '--bottom', help='Bottom-most bound', required=False, type=float)
+parser.add_argument('-R', '--right', help='Rightmost bound', required=False, type=float)
+parser.add_argument('-T', '--top', help='Top bound', required=False, type=float)
+parser.add_argument('-zone', '--get_utm_zone', help='Boolean 0 or 1 to return utm zone", required=False, type=int)
 
 args = parser.parse_args()
 in_fn = args.input_file
+l=args.left
+b=args.bottom
+r=args.right
+t=args.top
+z=args.get_utm_zone
 
 # Define functions
 def round_down(n, decimals=2):
@@ -131,36 +141,47 @@ try:
     xmax=int(round_up(max(ur_lon, lr_lon), decimals=0))    # Right
     ymax=int(round_up(max(ul_lat, ur_lat), decimals=0))    # Top
 except:
-    # Call functions on input image
-    raster_ds = gdal.Open(in_fn, gdal.GA_ReadOnly)
-    # Fetch number of rows and columns
-    ncol = raster_ds.RasterXSize
-    nrow = raster_ds.RasterYSize
-    # Fetch geotransform
-    gt = raster_ds.GetGeoTransform()
-    ext, corners = GetExtent(gt, ncol, nrow)
+    if l is not None:
+        if l>180:    # Correct for absolute eastings
+            l=l-360
+        if r>180:
+            r=r-360
+        xmin=l
+        ymin=b
+        xmax=r
+        ymax=t
+    else:
+        # Call functions on input image
+        raster_ds = gdal.Open(in_fn, gdal.GA_ReadOnly)
+        # Fetch number of rows and columns
+        ncol = raster_ds.RasterXSize
+        nrow = raster_ds.RasterYSize
+        # Fetch geotransform
+        gt = raster_ds.GetGeoTransform()
+        ext, corners = GetExtent(gt, ncol, nrow)
 
-    src_srs=osr.SpatialReference()
-    src_srs.ImportFromWkt(raster_ds.GetProjection())
-    print(src_srs.ImportFromWkt(raster_ds.GetProjection()))
-    tgt_srs=src_srs.CloneGeogCS()
+        src_srs=osr.SpatialReference()
+        src_srs.ImportFromWkt(raster_ds.GetProjection())
+        print(src_srs.ImportFromWkt(raster_ds.GetProjection()))
+        tgt_srs=src_srs.CloneGeogCS()
 
-    geo_ext=ReprojectCoords(corners,src_srs,tgt_srs)
+        geo_ext=ReprojectCoords(corners,src_srs,tgt_srs)
 
-    # Close dataset to free up resources
-    raster_ds=None
+        # Close dataset to free up resources
+        raster_ds=None
 
-    # Round to nearest degree (largest extent this time!)
-    xmin=int(round_down(min(geo_ext[0][0], geo_ext[1][0]), decimals=0))  # Left
-    ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
-    xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
-    ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
+        # Round to nearest degree (largest extent this time!)
+        xmin=int(round_down(min(geo_ext[0][0], geo_ext[1][0]), decimals=0))  # Left
+        ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
+        xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
+        ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
 
 # Get center coordinates and pull UTM zone from these
 x_center=(xmin + xmax)/2
 y_center=(ymin + ymax)/2
 zone=utm.from_latlon(y_center, x_center)[2]
 epsg="326"+str(zone)
+
 # print(xmin, ymin, xmax, ymax)
 # print(x_center, y_center)
 # print(zone)
