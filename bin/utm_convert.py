@@ -21,7 +21,8 @@ parser.add_argument('-L', '--left', help='Leftmost bound', required=False, type=
 parser.add_argument('-B', '--bottom', help='Bottom-most bound', required=False, type=float)
 parser.add_argument('-R', '--right', help='Rightmost bound', required=False, type=float)
 parser.add_argument('-T', '--top', help='Top bound', required=False, type=float)
-parser.add_argument('-zone', '--get_utm_zone', help='Boolean 0 or 1 to return utm zone", required=False, type=int)
+parser.add_argument('-zone', '--get_utm_zone', help='Flag to block returning UTM zone', required=False)
+parser.add_argument('-coords', '--convert_coords', help='Flag to convert coordinates to UTM', required=False)
 
 args = parser.parse_args()
 in_fn = args.input_file
@@ -30,6 +31,7 @@ b=args.bottom
 r=args.right
 t=args.top
 z=args.get_utm_zone
+c=args.convert_coords
 
 # Define functions
 def round_down(n, decimals=2):
@@ -110,79 +112,86 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x,y])
     return trans_coords
 
-try:
-    xml = in_fn[:-3]+'xml'
-    # if in_fn[-3:] == 'XML':
-    #     xml=in_fn
-    # else:
-    #     xml=in_fn[:-3]+'XML'
-    f=open(xml)
-    f.close()
-    ur_lon=float(getTag(xml, 'URLON'))
-    ur_lat=float(getTag(xml, 'URLAT'))
+if z is None:
 
-    ul_lon=float(getTag(xml, 'ULLON'))
-    ul_lat=float(getTag(xml, 'ULLAT'))
+    try:
+        xml = in_fn[:-3]+'xml'
+        # if in_fn[-3:] == 'XML':
+        #     xml=in_fn
+        # else:
+        #     xml=in_fn[:-3]+'XML'
+        f=open(xml)
+        f.close()
+        ur_lon=float(getTag(xml, 'URLON'))
+        ur_lat=float(getTag(xml, 'URLAT'))
 
-    lr_lon=float(getTag(xml, 'LRLON'))
-    lr_lat=float(getTag(xml, 'LRLAT'))
+        ul_lon=float(getTag(xml, 'ULLON'))
+        ul_lat=float(getTag(xml, 'ULLAT'))
 
-    ll_lon=float(getTag(xml, 'LLLON'))
-    ll_lat=float(getTag(xml, 'LLLAT'))
+        lr_lon=float(getTag(xml, 'LRLON'))
+        lr_lat=float(getTag(xml, 'LRLAT'))
 
-    # print(round_down(min(ul_lon, ll_lon), decimals=1),  # Left
-    # round_down(min(lr_lat, ll_lat), decimals=1),  # Bottom
-    # round_up(max(ur_lon, lr_lon), decimals=1),    # Right
-    # round_up(max(ul_lat, ur_lat), decimals=1))    # Top
+        ll_lon=float(getTag(xml, 'LLLON'))
+        ll_lat=float(getTag(xml, 'LLLAT'))
 
-    # Round to nearest degree (largest extent this time!)
-    xmin=int(round_down(min(ul_lon, ll_lon), decimals=0))  # Left
-    ymin=int(round_down(min(lr_lat, ll_lat), decimals=0))  # Bottom
-    xmax=int(round_up(max(ur_lon, lr_lon), decimals=0))    # Right
-    ymax=int(round_up(max(ul_lat, ur_lat), decimals=0))    # Top
-except:
-    if l is not None:
-        if l>180:    # Correct for absolute eastings
-            l=l-360
-        if r>180:
-            r=r-360
-        xmin=l
-        ymin=b
-        xmax=r
-        ymax=t
-    else:
-        # Call functions on input image
-        raster_ds = gdal.Open(in_fn, gdal.GA_ReadOnly)
-        # Fetch number of rows and columns
-        ncol = raster_ds.RasterXSize
-        nrow = raster_ds.RasterYSize
-        # Fetch geotransform
-        gt = raster_ds.GetGeoTransform()
-        ext, corners = GetExtent(gt, ncol, nrow)
-
-        src_srs=osr.SpatialReference()
-        src_srs.ImportFromWkt(raster_ds.GetProjection())
-        print(src_srs.ImportFromWkt(raster_ds.GetProjection()))
-        tgt_srs=src_srs.CloneGeogCS()
-
-        geo_ext=ReprojectCoords(corners,src_srs,tgt_srs)
-
-        # Close dataset to free up resources
-        raster_ds=None
+        # print(round_down(min(ul_lon, ll_lon), decimals=1),  # Left
+        # round_down(min(lr_lat, ll_lat), decimals=1),  # Bottom
+        # round_up(max(ur_lon, lr_lon), decimals=1),    # Right
+        # round_up(max(ul_lat, ur_lat), decimals=1))    # Top
 
         # Round to nearest degree (largest extent this time!)
-        xmin=int(round_down(min(geo_ext[0][0], geo_ext[1][0]), decimals=0))  # Left
-        ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
-        xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
-        ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
+        xmin=int(round_down(min(ul_lon, ll_lon), decimals=0))  # Left
+        ymin=int(round_down(min(lr_lat, ll_lat), decimals=0))  # Bottom
+        xmax=int(round_up(max(ur_lon, lr_lon), decimals=0))    # Right
+        ymax=int(round_up(max(ul_lat, ur_lat), decimals=0))    # Top
+    except:
+        if l is not None:
+            if l>180:    # Correct for absolute eastings
+                l=l-360
+            if r>180:
+                r=r-360
+            xmin=l
+            ymin=b
+            xmax=r
+            ymax=t
+        else:
+            # Call functions on input image
+            raster_ds = gdal.Open(in_fn, gdal.GA_ReadOnly)
+            # Fetch number of rows and columns
+            ncol = raster_ds.RasterXSize
+            nrow = raster_ds.RasterYSize
+            # Fetch geotransform
+            gt = raster_ds.GetGeoTransform()
+            ext, corners = GetExtent(gt, ncol, nrow)
 
-# Get center coordinates and pull UTM zone from these
-x_center=(xmin + xmax)/2
-y_center=(ymin + ymax)/2
-zone=utm.from_latlon(y_center, x_center)[2]
-epsg="326"+str(zone)
+            src_srs=osr.SpatialReference()
+            src_srs.ImportFromWkt(raster_ds.GetProjection())
+            print(src_srs.ImportFromWkt(raster_ds.GetProjection()))
+            tgt_srs=src_srs.CloneGeogCS()
 
-# print(xmin, ymin, xmax, ymax)
-# print(x_center, y_center)
-# print(zone)
-print(epsg)
+            geo_ext=ReprojectCoords(corners,src_srs,tgt_srs)
+
+            # Close dataset to free up resources
+            raster_ds=None
+
+            # Round to nearest degree (largest extent this time!)
+            xmin=int(round_down(min(geo_ext[0][0], geo_ext[1][0]), decimals=0))  # Left
+            ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
+            xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
+            ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
+
+    # Get center coordinates and pull UTM zone from these
+    x_center=(xmin + xmax)/2
+    y_center=(ymin + ymax)/2
+    zone=utm.from_latlon(y_center, x_center)[2]
+    epsg="326"+str(zone)
+
+    # print(xmin, ymin, xmax, ymax)
+    # print(x_center, y_center)
+    # print(zone)
+    print(epsg)
+
+if c is not None:
+    min_easting, min_northing, _, _=utm.from_latlon(ymin, xmin)
+    max_easting, max_northing, _, _=utm.from_latlon(ymax, xmax)
+    print(min_easting, min_northing, max_easting, max_northing)
