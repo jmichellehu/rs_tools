@@ -12,7 +12,8 @@ img=$1
 xml=${img%.*}.xml
 
 echo "./ortho.sh ${img}"
-# cleanup=true
+
+cleanup=true
 
 # Extract geographic coordinates for the input image
 GCS_file=GCS_coords.txt
@@ -92,8 +93,8 @@ else
     echo "NED vrt already exists"
 fi
 
-$HOME/git_dirs/wv3_classification/code/working/wv3_ortho_resample.sh $img $dem_vrt "1.24" EPSG:${zone}
+$HOME/git_dirs/wv3_classification/code/working/wv3_ortho_resample.sh $img $dem_vrt "1.24" ${zone}
 
 if $cleanup ; then
-    rm ${utm_file} ${GCS_file} ${NED_names} ${utm_file} ${dem_list}
+    rm ${utm_file} ${GCS_file} ${NED_names} ${dem_list}
 fi

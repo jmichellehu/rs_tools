@@ -14,6 +14,7 @@
 
 import utm
 import argparse, gdal, osr, math
+import sys
 
 parser = argparse.ArgumentParser(description='Geographic coordinates to UTM zone converter')
 parser.add_argument('-in', '--input_file', help='GeoTiff image file', required=False)

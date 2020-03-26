@@ -250,7 +250,12 @@ with rio.Env():
     profile.update(
         dtype=rio.float32,
         count=1,
-        compress='lzw')
+        compress='lzw',
+        interleave='band',
+        tiled=True,
+        blockxsize=512,
+        blockysize=512,
+    )
 
     with rio.open(out_fn, 'w', **profile) as dst:
         dst.write(np.squeeze(TOA_arr).astype(rio.float32), 1)
