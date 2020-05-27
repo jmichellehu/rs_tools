@@ -11,7 +11,6 @@ output format
 text file of corresponding utm zones 
 '''
 
-# import utm
 import argparse, gdal, osr, math
 import sys
 
@@ -109,16 +108,63 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x,y])
     return trans_coords
 
-if z is None:
+def get_utm_epsg_code(lat, lon):
+    import shapely.geometry
+    import json
+    """Modified from https://github.com/DigitalGlobe/gdal_ortho/blob/master/gdal_ortho/gdal_ortho.py
+    
+    Looks up the UTM zone for a point. This function uses the UTM Zone Boundaries shapefile from this
+    location: http://earth-info.nga.mil/GandG/coordsys/grids/universal_grid_system.html
+    Args:
+        lat: Latitude of the point to use.
+        lon: Longitude of the point to use.
+    Returns the integer EPSG code for the UTM zone containing the input point.
+    """
+    UTM_ZONES_PATH="/mnt/Backups/jmhu/git_dirs/rs_tools/bin/UTM_Zone_Boundaries.geojson"
+    
+    # Load the UTM zones
+    zone_geoms = {}
+    with open(UTM_ZONES_PATH, "r") as f_obj:
+        zones_dict = json.load(f_obj)
+    for feature in zones_dict["features"]:
+        zone_geom = shapely.geometry.shape(feature["geometry"])
+        zone_str = feature["properties"]["Zone_Hemi"]
+        zone_geoms[zone_str] = zone_geom
 
+    # Loop through zones and find the zone that contains the point
+    pt = shapely.geometry.Point([lon, lat])
+    found_zone = None
+    for (zone_str, zone_geom) in zone_geoms.items():
+        if zone_geom.contains(pt):
+            found_zone = zone_str
+    if found_zone is None:
+        raise InputError("Latitude %.10f Longitude %.10f is not in any UTM zone" % \
+                         (lat, lon))
+
+    # Parse the zone
+    (zone_num, hemisphere) = found_zone.split(",")
+    if hemisphere == "n":
+        base_epsg = 32600
+    else:
+        base_epsg = 32700
+
+    epsg = base_epsg + int(zone_num)
+    print(epsg)    
+    return epsg
+
+
+if z is None:
     try:
-        xml = in_fn[:-3]+'xml'
+        try:
+            xml = in_fn[:-3]+'xml'
         # if in_fn[-3:] == 'XML':
         #     xml=in_fn
         # else:
         #     xml=in_fn[:-3]+'XML'
-        f=open(xml)
-        f.close()
+            f=open(xml)
+            f.close()
+        except:
+            xml = in_fn[:-3]+'XML'
         ur_lon=float(getTag(xml, 'URLON'))
         ur_lat=float(getTag(xml, 'URLAT'))
 
@@ -131,26 +177,15 @@ if z is None:
         ll_lon=float(getTag(xml, 'LLLON'))
         ll_lat=float(getTag(xml, 'LLLAT'))
 
-        # print(round_down(min(ul_lon, ll_lon), decimals=1),  # Left
-        # round_down(min(lr_lat, ll_lat), decimals=1),  # Bottom
-        # round_up(max(ur_lon, lr_lon), decimals=1),    # Right
-        # round_up(max(ul_lat, ur_lat), decimals=1))    # Top
-
-        # Round to nearest degree (largest extent this time!)
+        # Round to nearest degree (largest extent)
         xmin=int(round_down(min(ul_lon, ll_lon), decimals=0))  # Left
         ymin=int(round_down(min(lr_lat, ll_lat), decimals=0))  # Bottom
         xmax=int(round_up(max(ur_lon, lr_lon), decimals=0))    # Right
         ymax=int(round_up(max(ul_lat, ur_lat), decimals=0))    # Top
+        
     except:
         if l is not None:
-#             if l>180:    # Correct for absolute eastings
-#                 l=l-360
-#             if r>180:
-#                 r=r-360
-            xmin=l
-            ymin=b
-            xmax=r
-            ymax=t
+            xmin, ymin, xmax, ymax=l, b, r, t
         else:
             # Call functions on input image
             raster_ds = gdal.Open(in_fn, gdal.GA_ReadOnly)
@@ -177,8 +212,6 @@ if z is None:
             xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
             ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
             
-            print(xmin, ymin, xmax, ymax)
-
     if xmin>180:    # Correct for absolute eastings
         xmin=xmin-360
     if xmax>180:
@@ -187,19 +220,17 @@ if z is None:
     # Get center coordinates and pull UTM zone from these
     x_center=(xmin + xmax)/2
     y_center=(ymin + ymax)/2
-#     zone=utm.from_latlon(y_center, x_center)[2]
-#     epsg="326"+str(zone)
 
 #     print(xmin, ymin, xmax, ymax)
 #     print(x_center, y_center)
-    # print(zone)
-    print(epsg)
-
-if c is not None:
-    xmin=l
-    ymin=b
-    xmax=r
-    ymax=t
-    min_easting, min_northing, _, _=utm.from_latlon(ymin, xmin)
-    max_easting, max_northing, _, _=utm.from_latlon(ymax, xmax)
-    print(min_easting, min_northing, max_easting, max_northing)
+    get_utm_epsg_code(y_center, x_center)
+    
+# if c is not None:
+#     import utm
+#     xmin=l
+#     ymin=b
+#     xmax=r
+#     ymax=t
+#     min_easting, min_northing, _, _=utm.from_latlon(ymin, xmin)
+#     max_easting, max_northing, _, _=utm.from_latlon(ymax, xmax)
+#     print(min_easting, min_northing, max_easting, max_northing)
