@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This script returns EPSG codes and utm zone numbers for the WGS84 datum.
+# This script returns EPSG codes and utm zone numbers for the WGS84 datum.  Coordinate conversion uses pyproj library
 # Parts of this code are sourced from:
 # David Shean's dgtools repository, 
 # https://gis.stackexchange.com/questions/57834/how-to-get-raster-corner-coordinates-using-python-gdal-bindings, 
@@ -119,11 +119,15 @@ def get_utm_epsg_code(lat, lon, z=None):
         base_epsg = 32600
     else:
         base_epsg = 32700
+
+    epsg = base_epsg + int(zone_num)
+    
     if z is not None:
         print("ZONE:", zone_num + hemisphere.upper())
-        print("EPSG:", base_epsg + int(zone_num))    
+        print("EPSG:", epsg)
     else:
-        print(base_epsg + int(zone_num))    
+        print(epsg)
+    return('epsg:'+str(epsg))
 
 def run(in_fn=None, l=None, b=None, r=None, t=None, z=None, c=None):
     try:
@@ -184,15 +188,24 @@ def run(in_fn=None, l=None, b=None, r=None, t=None, z=None, c=None):
     # Get center coordinates and pull UTM zone from these
     x_center=(xmin + xmax)/2
     y_center=(ymin + ymax)/2
+
+    proj_str = get_utm_epsg_code(y_center, x_center, z)
     
-    get_utm_epsg_code(y_center, x_center, z)
-    
-    # If utm package has been installed, convert input coordinates to projected UTM coordinates
+    # convert input coordinates to projected UTM coordinates with pyproj
     if c is not None:
-        import utm
-        xmin, ymin, xmax, ymax=l, b, r, t
-        min_easting, min_northing, _, _=utm.from_latlon(ymin, xmin)
-        max_easting, max_northing, _, _=utm.from_latlon(ymax, xmax)
+        from pyproj import Proj, transform
+        inProj = Proj(init='epsg:4326')
+        outProj = Proj(init=proj_str)
+        if (xmin is None and l is not None):
+            xmin, ymin, xmax, ymax = l, b, r, t
+        else:
+            xmin=min(geo_ext[0][0], geo_ext[1][0])  # Left
+            ymin=min(geo_ext[1][1], geo_ext[2][1])  # Bottom
+            xmax=max(geo_ext[2][0], geo_ext[3][0])  # Right
+            ymax=max(geo_ext[3][1], geo_ext[1][1])  # Top
+        
+        min_easting, min_northing =transform(inProj, outProj, xmin, ymin)
+        max_easting, max_northing =transform(inProj, outProj, xmax, ymax)
         print(min_easting, min_northing, max_easting, max_northing)
 
 def get_parser():
