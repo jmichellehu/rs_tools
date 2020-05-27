@@ -93,7 +93,7 @@ def get_utm_epsg_code(lat, lon, z=None):
     Returns the integer EPSG code for the UTM zone containing the input point.
     """
 
-    UTM_ZONES_PATH="/mnt/Backups/jmhu/git_dirs/rs_tools/data/UTM_Zone_Boundaries.geojson"
+    UTM_ZONES_PATH="../data/UTM_Zone_Boundaries.geojson"
     
     # Load the UTM zones
     zone_geoms = {}
