@@ -11,7 +11,7 @@ output format
 text file of corresponding utm zones 
 '''
 
-import utm
+# import utm
 import argparse, gdal, osr, math
 import sys
 
@@ -52,7 +52,7 @@ def getTag(xml_fn, tag):
     # Want to check to make sure tree contains tag
     elem = tree.find('.//%s' % tag)
     if elem is not None:
-        return elem.text'
+        return elem.text
 
 def xml_dt(xml_fn):
     '''From David Shean's dgtools'''
@@ -143,10 +143,10 @@ if z is None:
         ymax=int(round_up(max(ul_lat, ur_lat), decimals=0))    # Top
     except:
         if l is not None:
-            if l>180:    # Correct for absolute eastings
-                l=l-360
-            if r>180:
-                r=r-360
+#             if l>180:    # Correct for absolute eastings
+#                 l=l-360
+#             if r>180:
+#                 r=r-360
             xmin=l
             ymin=b
             xmax=r
@@ -176,15 +176,22 @@ if z is None:
             ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
             xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
             ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
+            
+            print(xmin, ymin, xmax, ymax)
+
+    if xmin>180:    # Correct for absolute eastings
+        xmin=xmin-360
+    if xmax>180:
+        xmax=xmax-360
 
     # Get center coordinates and pull UTM zone from these
     x_center=(xmin + xmax)/2
     y_center=(ymin + ymax)/2
-    zone=utm.from_latlon(y_center, x_center)[2]
-    epsg="326"+str(zone)
+#     zone=utm.from_latlon(y_center, x_center)[2]
+#     epsg="326"+str(zone)
 
-    # print(xmin, ymin, xmax, ymax)
-    # print(x_center, y_center)
+#     print(xmin, ymin, xmax, ymax)
+#     print(x_center, y_center)
     # print(zone)
     print(epsg)
 
