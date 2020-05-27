@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-
 # This script returns utm zone numbers for the WGS84 datum as well as EPSG codes for the contiguous United states.  The utm package is required
-
 ### # TODO:
 # Incorporate handling for one-off lat lon inputs
 # bounds rounded to the  that intersect the spatial extent extracted from geotransform information of an input image.  Large parts of this code are sourced from David Shean's dgtools repository and from https://gis.stackexchange.com/questions/57834/how-to-get-raster-corner-coordinates-using-python-gdal-bindings
 
-# Usage from command line:
-# python utm_convert.py -in image.tif -L left -B bottom -R right -T top
+'''Usage from command line:
+python utm_convert.py -in image.tif -L left -B bottom -R right -T top
 
-# output format
-# text file of corresponding utm zones for contiguous US
+output format
+text file of corresponding utm zones 
+'''
 
 import utm
 import argparse, gdal, osr, math
@@ -36,36 +35,33 @@ c=args.convert_coords
 
 # Define functions
 def round_down(n, decimals=2):
-    '''
-    Function to implement floor function and round down to nearest hundredths place
-    '''
+    '''Function to implement floor function and round down to nearest hundredths place'''
     multiplier = 10 ** decimals
     return math.floor(n * multiplier) / multiplier
 
 def round_up(n, decimals=2):
-    '''
-    Function to implement ceiling function and round up to nearest hundredths place
-    '''
+    '''Function to implement ceiling function and round up to nearest hundredths place'''
     multiplier = 10 ** decimals
     return math.ceil(n * multiplier) / multiplier
 
-# Pulled from David Shean's dgtools
-# Get functions set up
 def getTag(xml_fn, tag):
+    '''From David Shean's dgtools'''
     import xml.etree.ElementTree as ET
     tree = ET.parse(xml_fn)
 
     # Want to check to make sure tree contains tag
     elem = tree.find('.//%s' % tag)
     if elem is not None:
-        return elem.text
+        return elem.text'
 
 def xml_dt(xml_fn):
+    '''From David Shean's dgtools'''
     t = getTag(xml_fn, 'FIRSTLINETIME')
     dt = datetime.strptime(t,"%Y-%m-%dT%H:%M:%S.%fZ")
     return dt
 
 def getAllTag(xml_fn, tag):
+    '''From David Shean's dgtools'''
     import xml.etree.ElementTree as ET
     tree = ET.parse(xml_fn)
 
