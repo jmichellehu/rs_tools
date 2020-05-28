@@ -21,6 +21,11 @@ def calc_ndvi(red_arr, nir1_arr, r_ndv=None, nir1_ndv=None):
     # Create normalized ndvi array from 0-1 for further processing with min-max scaling
     ndvi_norm = (ndvi+1)/2
 
+    if (r_ndv is None) & (nir1_ndv is None):
+        ndsi_ndv=9999
+    else:
+        ndsi_ndv=r_ndv
+        
     # Mask with ndv areas from original arrays
     ndvi[red_arr==r_ndv]=r_ndv
     ndvi[nir1_arr==nir1_ndv]=nir1_ndv

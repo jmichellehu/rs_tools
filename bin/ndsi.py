@@ -21,6 +21,11 @@ def calc_ndsi(green_arr, swir3_arr, g_ndv=None, swir3_ndv=None):
     # Create normalized ndsi array from 0-1 for further processing with min-max scaling
     ndsi_3_norm = (ndsi_3+1)/2
     
+    if (g_ndv is None) & (swir3_ndv is None):
+        ndsi_ndv=9999
+    else:
+        ndsi_ndv=g_ndv
+    
     # Mask with ndv areas from original arrays
     ndsi_3[green_arr==g_ndv]=ndsi_ndv
     ndsi_3[swir3_arr==swir3_ndv]=ndsi_ndv
