@@ -94,7 +94,7 @@ def get_utm_epsg_code(lat, lon, z=None):
     """
 
     UTM_ZONES_PATH="../data/UTM_Zone_Boundaries.geojson"
-    
+
     # Load the UTM zones
     zone_geoms = {}
     with open(UTM_ZONES_PATH, "r") as f_obj:
@@ -125,9 +125,7 @@ def get_utm_epsg_code(lat, lon, z=None):
     if z is not None:
         print("ZONE:", zone_num + hemisphere.upper())
         print("EPSG:", epsg)
-    else:
-        print(epsg)
-    return('epsg:'+str(epsg))
+    return('epsg:'+str(epsg), epsg)
 
 def run(in_fn=None, l=None, b=None, r=None, t=None, z=None, c=None):
     try:
@@ -179,7 +177,7 @@ def run(in_fn=None, l=None, b=None, r=None, t=None, z=None, c=None):
             ymin=int(round_down(min(geo_ext[1][1], geo_ext[2][1]), decimals=0))  # Bottom
             xmax=int(round_up(max(geo_ext[2][0], geo_ext[3][0]), decimals=0))    # Right
             ymax=int(round_up(max(geo_ext[3][1], geo_ext[1][1]), decimals=0))    # Top
-            
+
     if xmin>180:    # Correct for absolute eastings
         xmin=xmin-360
     if xmax>180:
@@ -189,21 +187,15 @@ def run(in_fn=None, l=None, b=None, r=None, t=None, z=None, c=None):
     x_center=(xmin + xmax)/2
     y_center=(ymin + ymax)/2
 
-    proj_str = get_utm_epsg_code(y_center, x_center, z)
+    proj_str, epsg = get_utm_epsg_code(y_center, x_center, z)
     
     # convert input coordinates to projected UTM coordinates with pyproj
-    if c is not None:
+    if c is None:
+        print(epsg)
+    else:
         from pyproj import Proj, transform
         inProj = Proj(init='epsg:4326')
         outProj = Proj(init=proj_str)
-        if (xmin is None and l is not None):
-            xmin, ymin, xmax, ymax = l, b, r, t
-        else:
-            xmin=min(geo_ext[0][0], geo_ext[1][0])  # Left
-            ymin=min(geo_ext[1][1], geo_ext[2][1])  # Bottom
-            xmax=max(geo_ext[2][0], geo_ext[3][0])  # Right
-            ymax=max(geo_ext[3][1], geo_ext[1][1])  # Top
-        
         min_easting, min_northing =transform(inProj, outProj, xmin, ymin)
         max_easting, max_northing =transform(inProj, outProj, xmax, ymax)
         print(min_easting, min_northing, max_easting, max_northing)
