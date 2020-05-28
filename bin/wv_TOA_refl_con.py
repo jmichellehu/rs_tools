@@ -141,7 +141,6 @@ OrderDict = {
 def getTag(xml_fn, tag):
     import xml.etree.ElementTree as ET
     tree = ET.parse(xml_fn)
-    #Want to check to make sure tree contains tag
     elem = tree.find('.//%s' % tag)
     if elem is not None:
         return elem.text
@@ -154,7 +153,6 @@ def xml_dt(xml_fn):
 def getAllTag(xml_fn, tag):
     import xml.etree.ElementTree as ET
     tree = ET.parse(xml_fn)
-    #Want to check to make sure tree contains tag
     elem = tree.findall('.//%s' % tag)
     return [i.text for i in elem]
 
@@ -226,12 +224,9 @@ def chunkify(iterable, chunk=CHUNK):
 def main(infile, gain, toa_rad_coeff, offset, esd, Esun, sunang, outfile, max_workers=2):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-
         with rio.open(infile) as src:
             profile=src.profile
-
             with rio.Env():
-
                 # And then change the band count to 1, set the
                 # dtype to float 32, and specify LZW compression.
                 profile.update(
@@ -245,17 +240,12 @@ def main(infile, gain, toa_rad_coeff, offset, esd, Esun, sunang, outfile, max_wo
                 )
 
             with rio.open(outfile, "w", **profile) as dst:
-
                 windows = [window for ij, window in dst.block_windows()]
                 
                 for chunk in [windows]:  # chunkify(windows):
-#                     print(chunk)
-
                     future_to_window = dict()
-
+                    
                     for window in chunk:
-#                         print(window)
-
                         future = executor.submit(compute, gain, toa_rad_coeff, offset, esd, Esun, sunang, infile, window)
                         future_to_window[future] = window
                         
@@ -264,13 +254,16 @@ def main(infile, gain, toa_rad_coeff, offset, esd, Esun, sunang, outfile, max_wo
                         result = future.result()
                         dst.write(result, window=window)        
 
-if __name__ == "__main__":
-    # Have user define input bands and output filename
+def get_parser():
     parser = argparse.ArgumentParser(description='GeoTiff WorldView Multispectral Image to TOA Reflection Image Conversion Script')
     parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
     parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
     parser.add_argument('-in_x', '--input_xml', help='GeoTiff multi band xml file', required=True)
     parser.add_argument('-out', '--output_file', help='Where TOA reflectance image is to be saved', required=True)
+    return parser       
+                        
+if __name__ == "__main__":
+    parser = get_parser()
     args = parser.parse_args()
 
     in_fn = args.input_file

@@ -4,24 +4,10 @@
 # This script calculates TOA reflectance for WorldView-2 and -3 Level 1-B imagery using user input XML file.  Calibration factors (irradiance, gain, and offset) are obtained from DG_ABSCALVAL_2016v0 - https://dg-cms-uploads-production.s3.amazonaws.com/uploads/document/file/209/ABSRADCAL_FLEET_2016v0_Rel20170606.pdf
 
 # import libraries
-import math
+import argparse
+from datetime import datetime
+import numpy as np
 import rasterio as rio
-from gdalconst import *
-import argparse, numpy as np, gdal, struct, sys
-from datetime import datetime, timedelta
-
-# Have user define input bands and output filename
-parser = argparse.ArgumentParser(description='GeoTiff WorldView Multispectral Image to TOA Reflection Image Conversion Script')
-parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
-parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
-parser.add_argument('-in_x', '--input_xml', help='GeoTiff multi band xml file', required=True)
-parser.add_argument('-out', '--output_file', help='Where TOA reflectance image is to be saved', required=True)
-args = parser.parse_args()
-
-in_fn = args.input_file
-in_band = args.input_band
-xml_fn = args.input_xml
-out_fn = args.output_file
 
 # Irradiance dictionary band values
 EsunDict = {
@@ -152,12 +138,6 @@ OrderDict = {
 'WV03_BAND_S8':7
 }
 
-# open tif as numpy array
-with rio.open(in_fn) as f:
-    data=f.read()
-    ndv=f.nodata
-    prof=f.profile
-
 def getTag(xml_fn, tag):
     import xml.etree.ElementTree as ET
     tree = ET.parse(xml_fn)
@@ -178,7 +158,7 @@ def getAllTag(xml_fn, tag):
     elem = tree.findall('.//%s' % tag)
     return [i.text for i in elem]
 
-def toa_rad(xml_fn, band=in_band):
+def toa_rad(xml_fn, band):
     """Calculate scaling factor abs/effbw for top-of-atmosphere radiance
     """
     sat = getTag(xml_fn, 'SATID')
@@ -192,7 +172,7 @@ def toa_rad(xml_fn, band=in_band):
     toa_rad_coeff = toa_rad_coeff_list[OrderDict[key]]
     return toa_rad_coeff
 
-def toa_refl(xml_fn, band):
+def toa_refl(xml_fn, band, data):
     """Calculate scaling factor for top-of-atmosphere reflectance
     """
     #These need to be pulled out by individual band
@@ -204,20 +184,19 @@ def toa_refl(xml_fn, band):
     Esun = EsunDict[key]
     gain = GainDict[key]
     offset = OffsetDict[key]
-    print(sat, key, Esun, gain, offset)
+#     print(sat, key, Esun, gain, offset)
     msunel = float(getTag(xml_fn, 'MEANSUNEL'))
     sunang = 90.0 - msunel
     dt = xml_dt(xml_fn)
     esd = calcEarthSunDist(dt)
-    print(msunel, sunang, dt, esd)
-    toa_rad_coeff = toa_rad(xml_fn)
-    print("AbsCalFactor/EffBW is ", toa_rad_coeff)
-    TOA_refl = (gain * data * toa_rad_coeff + offset) * (esd**2 * np.pi) / (Esun * np.cos(np.radians(sunang)))
-    return TOA_refl
+#     print(msunel, sunang, dt, esd)
+    toa_rad_coeff = toa_rad(xml_fn, in_band)
+#     print("AbsCalFactor/EffBW is ", toa_rad_coeff)
+    TOA_arr = (gain * data * toa_rad_coeff + offset) * (esd**2 * np.pi) / (Esun * np.cos(np.radians(sunang)))
+    return TOA_arr
 
 def calcEarthSunDist(dt):
-    """Calculate Earth-Sun distance
-    """
+    """Calculate Earth-Sun distance"""
     #Astronomical Units (AU), should have a value between 0.983 and 1.017
     year = dt.year
     month = dt.month
@@ -238,25 +217,45 @@ def calcEarthSunDist(dt):
 #     print("Earth-sun distance", d)
     return d
 
+def get_parser():
+    parser = argparse.ArgumentParser(description='GeoTiff WorldView Multispectral Image to TOA Reflection Image Conversion Script')
+    parser.add_argument('-in', '--input_file', help='GeoTiff multi band MS image file', required=True)
+    parser.add_argument('-in_band', '--input_band', help='GeoTiff multi band', required=True)
+    parser.add_argument('-in_x', '--input_xml', help='GeoTiff multi band xml file', required=True)
+    parser.add_argument('-out', '--output_file', help='Where TOA reflectance image is to be saved', required=True)
+    return parser
 
-TOA_arr=toa_refl(xml_fn, in_band)
-TOA_arr[data==ndv] = ndv
+def main(in_fn, xml_fn, in_band, out_fn):
+    with rio.open(in_fn) as f:
+        data=f.read(1)
+        ndv=f.nodata
+        prof=f.profile
 
-with rio.Env():
-    profile = prof
+    TOA_arr=toa_refl(xml_fn, in_band, data)
+    TOA_arr[data==ndv] = ndv
 
-    # And then change the band count to 1, set the
-    # dtype to float 32, and specify LZW compression.
-    profile.update(
-        dtype=rio.float32,
-        count=1,
-        compress='lzw',
-        interleave='band',
-        tiled=True,
-        blockxsize=512,
-        blockysize=512,
-    )
+    with rio.Env():
+        profile = prof
+        profile.update(
+            dtype=rio.float32,
+            count=1,
+            compress='lzw',
+            interleave='band',
+            tiled=True,
+            blockxsize=512,
+            blockysize=512,
+        )
 
-    with rio.open(out_fn, 'w', **profile) as dst:
-        dst.write(np.squeeze(TOA_arr).astype(rio.float32), 1)
+        with rio.open(out_fn, 'w', **profile) as dst:
+            dst.write(np.squeeze(TOA_arr).astype(rio.float32), 1)
 
+if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+    
+    in_fn = args.input_file
+    in_band = args.input_band
+    xml_fn = args.input_xml
+    out_fn = args.output_file
+    
+    main(in_fn, xml_fn, in_band, out_fn)
