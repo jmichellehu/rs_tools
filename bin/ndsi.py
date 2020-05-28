@@ -39,7 +39,6 @@ def run(multi_band_file, swir_file, out_fn, green_fn, s3_fn, px_res, p_name):
         swir3_arr, _, swir3_ndv = read_file(s3_fn)
     else:
         sys.exit("Check input files, missing proper input")
-        break
 
     ndsi_3, ndsi_3_norm = calc_ndsi(green_arr, swir3_arr, g_ndv, swir3_ndv)
 
@@ -65,7 +64,7 @@ def get_parser():
     return parser
 
 def main():
-    parser = get_parser
+    parser = get_parser()
     args = parser.parse_args()
     in_fn = args.MS_input_file
     swir_file = args.SWIR_input_file
