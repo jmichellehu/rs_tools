@@ -108,14 +108,15 @@ OffsetDict = {
 # WV order (0-based indexing)
 OrderDict = {
 'WV02_BAND_P':0,
-'WV02_BAND_C':1,
-'WV02_BAND_B':2,
-'WV02_BAND_G':3,
-'WV02_BAND_Y':4,
-'WV02_BAND_R':5,
-'WV02_BAND_RE':6,
-'WV02_BAND_N':7,
-'WV02_BAND_N2':8,
+    
+'WV02_BAND_C':0,
+'WV02_BAND_B':1,
+'WV02_BAND_G':2,
+'WV02_BAND_Y':3,
+'WV02_BAND_R':4,
+'WV02_BAND_RE':5,
+'WV02_BAND_N':6,
+'WV02_BAND_N2':7,
 
 'WV03_BAND_P':0,
     
@@ -165,6 +166,7 @@ def toa_rad(xml_fn, band):
     abscal = np.array((getAllTag(xml_fn, 'ABSCALFACTOR')), dtype=float)
     effbw = np.array((getAllTag(xml_fn, 'EFFECTIVEBANDWIDTH')), dtype=float)
 #     print(abscal, effbw)
+
     #Multiply L1B DN by this to obtain top-of-atmosphere spectral radiance image pixels
     toa_rad_coeff_list = abscal/effbw
     toa_rad_coeff = toa_rad_coeff_list[OrderDict[key]]

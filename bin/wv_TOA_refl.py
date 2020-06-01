@@ -108,14 +108,15 @@ OffsetDict = {
 # WV order (0-based indexing)
 OrderDict = {
 'WV02_BAND_P':0,
-'WV02_BAND_C':1,
-'WV02_BAND_B':2,
-'WV02_BAND_G':3,
-'WV02_BAND_Y':4,
-'WV02_BAND_R':5,
-'WV02_BAND_RE':6,
-'WV02_BAND_N':7,
-'WV02_BAND_N2':8,
+    
+'WV02_BAND_C':0,
+'WV02_BAND_B':1,
+'WV02_BAND_G':2,
+'WV02_BAND_Y':3,
+'WV02_BAND_R':4,
+'WV02_BAND_RE':5,
+'WV02_BAND_N':6,
+'WV02_BAND_N2':7,
 
 'WV03_BAND_P':0,
     
@@ -244,6 +245,7 @@ def main(in_fn, xml_fn, in_band, out_fn):
             tiled=True,
             blockxsize=512,
             blockysize=512,
+            BIGTIFF='YES'
         )
 
         with rio.open(out_fn, 'w', **profile) as dst:
