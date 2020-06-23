@@ -16,4 +16,3 @@ python wv3_TOA_refl.py -in --single_band_tiff -in_band --band_code -in_x --XML_f
 
 #### Required:
   - gdal (https://www.gdal.org/)
-  - geoio (https://github.com/DigitalGlobe/geoio)
