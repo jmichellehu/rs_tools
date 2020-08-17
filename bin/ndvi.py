@@ -38,12 +38,14 @@ def calc_ndvi(red_arr, nir1_arr, r_ndv=None, nir1_ndv=None):
 def run(multi_band_file, out_fn, nir1_fn, red_fn, px_res, p_name):
     if multi_band_file is not None:
         red_arr, prf, r_ndv = read_file(multi_band_file[:-4] + "_b5_" + p_name + "_refl.tif")
+        RE_arr, _, RE_ndv = read_file(multi_band_file[:-4] + "_b6_" + p_name + "_refl.tif")        
         nir1_arr, _, nir1_ndv = read_file(multi_band_file[:-4] + "_b7_" + p_name + "_refl.tif")
     elif red_fn is not None:
         red_arr, prf, r_ndv = read_file(red_fn)
         nir1_arr, _, nir1_ndv = read_file(nir1_fn)
             
     ndvi, ndvi_norm = calc_ndvi(red_arr, nir1_arr, r_ndv, nir1_ndv)
+    ndvi_RE, ndvi_norm_RE = calc_ndvi(RE_arr, nir1_arr, RE_ndv, nir1_ndv)
     
     # Write NDVI arrays to file
     with rio.Env():
@@ -55,6 +57,11 @@ def run(multi_band_file, out_fn, nir1_fn, red_fn, px_res, p_name):
             dst.write(np.squeeze(ndvi).astype(rio.float32), 1)
         with rio.open(out_fn[:-4]+"_minmax.tif", 'w', **prf) as dst:
             dst.write(np.squeeze(ndvi_norm).astype(rio.float32), 1)
+
+        with rio.open(out_fn[:-4]+"_RE.tif", 'w', **prf) as dst:
+            dst.write(np.squeeze(ndvi_RE).astype(rio.float32), 1)
+        with rio.open(out_fn[:-4]+"_RE_minmax.tif", 'w', **prf) as dst:
+            dst.write(np.squeeze(ndvi_norm_RE).astype(rio.float32), 1)
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Normalized Difference Vegetation Index Calculation Script')
