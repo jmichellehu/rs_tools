@@ -6,6 +6,7 @@
 import argparse
 import numpy as np
 import rasterio as rio
+import sys
 
 def read_file(fn):
     with rio.open(fn) as f:
@@ -35,33 +36,41 @@ def calc_ndvi(red_arr, nir1_arr, r_ndv=None, nir1_ndv=None):
     
     return ndvi, ndvi_norm
 
-def run(multi_band_file, out_fn, nir1_fn, red_fn, px_res, p_name):
-    if multi_band_file is not None:
-        red_arr, prf, r_ndv = read_file(multi_band_file[:-4] + "_b5_" + p_name + "_refl.tif")
-        RE_arr, _, RE_ndv = read_file(multi_band_file[:-4] + "_b6_" + p_name + "_refl.tif")        
-        nir1_arr, _, nir1_ndv = read_file(multi_band_file[:-4] + "_b7_" + p_name + "_refl.tif")
-    elif red_fn is not None:
-        red_arr, prf, r_ndv = read_file(red_fn)
-        nir1_arr, _, nir1_ndv = read_file(nir1_fn)
-            
-    ndvi, ndvi_norm = calc_ndvi(red_arr, nir1_arr, r_ndv, nir1_ndv)
-    ndvi_RE, ndvi_norm_RE = calc_ndvi(RE_arr, nir1_arr, RE_ndv, nir1_ndv)
+def run(multi_band_file, out_fn, nir1_fn, red_fn, px_res, modifier):
+    try:
+        if (multi_band_file is not None) & (modifier is not None):
+            red_arr, prf, r_ndv = read_file(multi_band_file[:-4] + "_b5_" + modifier + "_refl.tif")
+            RE_arr, _, RE_ndv = read_file(multi_band_file[:-4] + "_b6_" + modifier + "_refl.tif")        
+            nir1_arr, _, nir1_ndv = read_file(multi_band_file[:-4] + "_b7_" + modifier + "_refl.tif")
+        elif (red_fn is not None) & (nir1_fn is not None):
+            red_arr, prf, r_ndv = read_file(red_fn)
+            nir1_arr, _, nir1_ndv = read_file(nir1_fn)
+        else:
+            sys.exit("Check input files, missing proper input")
     
-    # Write NDVI arrays to file
-    with rio.Env():
-        prf.update(
-            dtype=rio.float32,
-            count=1,
-            compress='lzw')
-        with rio.open(out_fn, 'w', **prf) as dst:
-            dst.write(np.squeeze(ndvi).astype(rio.float32), 1)
-        with rio.open(out_fn[:-4]+"_minmax.tif", 'w', **prf) as dst:
-            dst.write(np.squeeze(ndvi_norm).astype(rio.float32), 1)
+        ndvi, ndvi_norm = calc_ndvi(red_arr, nir1_arr, r_ndv, nir1_ndv)
+        ndvi_RE, ndvi_norm_RE = calc_ndvi(RE_arr, nir1_arr, RE_ndv, nir1_ndv)
 
-        with rio.open(out_fn[:-4]+"_RE.tif", 'w', **prf) as dst:
-            dst.write(np.squeeze(ndvi_RE).astype(rio.float32), 1)
-        with rio.open(out_fn[:-4]+"_RE_minmax.tif", 'w', **prf) as dst:
-            dst.write(np.squeeze(ndvi_norm_RE).astype(rio.float32), 1)
+        # Write NDVI arrays to file
+        try:
+            with rio.Env():
+                prf.update(
+                    dtype=rio.float32,
+                    count=1,
+                    compress='lzw')
+                with rio.open(out_fn, 'w', **prf) as dst:
+                    dst.write(np.squeeze(ndvi).astype(rio.float32), 1)
+                with rio.open(out_fn[:-4]+"_minmax.tif", 'w', **prf) as dst:
+                    dst.write(np.squeeze(ndvi_norm).astype(rio.float32), 1)
+
+                with rio.open(out_fn[:-4]+"_RE.tif", 'w', **prf) as dst:
+                    dst.write(np.squeeze(ndvi_RE).astype(rio.float32), 1)
+                with rio.open(out_fn[:-4]+"_RE_minmax.tif", 'w', **prf) as dst:
+                    dst.write(np.squeeze(ndvi_norm_RE).astype(rio.float32), 1)
+        except:
+            print("Cannot write out calculated NDVI")
+    except:
+        print("Cannot calculate NDVI, check inputs") 
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Normalized Difference Vegetation Index Calculation Script')
@@ -70,6 +79,7 @@ def get_parser():
     parser.add_argument('-r', '--red_band', help='Single-band red input', required=False)
     parser.add_argument('-n', '--nir_band', help='Single-band NIR channel input', required=False)
     parser.add_argument('-res', '--px_res', help='Pixel resolution, default is 1.2m', default="1.2", required=False)
+    parser.add_argument('-m', '--mod', help='Modifiers to single band filenames')
     return parser
 
 def main():
@@ -78,12 +88,21 @@ def main():
     in_fn = args.MS_input_file
     out_fn = args.output_file
 
+    if out_fn is None:
+        out_fn='ndvi.tif'
+
     nir1_fn=args.nir_band
     red_fn=args.red_band
-    px_res=args.px_res    
-    p_name=px_res[0]+px_res[-1]
+    px_res=args.px_res
 
-    run(in_fn, out_fn, nir1_fn, red_fn, px_res, p_name)
+    # Mosaicked handling
+    if (args.mod == "None") | (args.mod is None):
+        modifier=px_res[0]+px_res[-1]
+    else:
+        modifier=args.mod + "_" + px_res[0]+px_res[-1]
+
+#     print(in_fn, out_fn, nir1_fn, red_fn, px_res, modifier)
+    run(in_fn, out_fn, nir1_fn, red_fn, px_res, modifier)
     
 if __name__ == "__main__":    
     main()
