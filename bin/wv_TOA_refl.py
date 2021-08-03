@@ -191,7 +191,7 @@ def toa_refl(xml_fn, band, data):
     dt = xml_dt(xml_fn)
     esd = calcEarthSunDist(dt)
 #     print(msunel, sunang, dt, esd)
-    toa_rad_coeff = toa_rad(xml_fn, in_band)
+    toa_rad_coeff = toa_rad(xml_fn, band)
 #     print("AbsCalFactor/EffBW is ", toa_rad_coeff)
     TOA_arr = (gain * data * toa_rad_coeff + offset) * (esd**2 * np.pi) / (Esun * np.cos(np.radians(sunang)))
     return TOA_arr
