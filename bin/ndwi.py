@@ -5,7 +5,7 @@
 
 # USAGE: 
 # ndwi.py -in ms_fn.tif -out out_NDWI.tif -m 'mos'
-# NDWI = ( green - NIR1 ) / ( green + NIR1 )
+# NDWI = ( green - NIR2 ) / ( green + NIR2 )
     
 import argparse
 import numpy as np
@@ -29,43 +29,43 @@ def read_file(fn):
         ndv=f.nodata
     return arr, prf, ndv
     
-def calc_ndwi(green_arr, nir1_arr, g_ndv=None, nir1_ndv=None):
+def calc_ndwi(green_arr, nir2_arr, g_ndv=None, nir2_ndv=None):
     # Calculate NDWI
-    ndwi = (green_arr - nir1_arr) / (green_arr + nir1_arr)
+    ndwi = (green_arr - nir2_arr) / (green_arr + nir2_arr)
 
     # Create normalized ndwi array from 0-1 for further processing with min-max scaling
     ndwi_norm = (ndwi+1)/2
 
-    if (g_ndv is None) & (nir1_ndv is None):
+    if (g_ndv is None) & (nir2_ndv is None):
         ndwi_ndv=9999
     else:
         ndwi_ndv=g_ndv
         
     # Mask with ndv areas from original arrays
     ndwi[green_arr==g_ndv]=g_ndv
-    ndwi[nir1_arr==nir1_ndv]=nir1_ndv
+    ndwi[nir2_arr==nir2_ndv]=nir2_ndv
 
     ndwi_norm[green_arr==g_ndv]=g_ndv
-    ndwi_norm[nir1_arr==nir1_ndv]=nir1_ndv
+    ndwi_norm[nir2_arr==nir2_ndv]=nir2_ndv
     
     return ndwi, ndwi_norm
 
 def run(multi_band_file=None, out_fn=None, 
-        nir1_fn=None, green_fn=None, 
+        nir2_fn=None, green_fn=None, 
         px_res="1.2", modifier=None):
-    print(multi_band_file, out_fn, nir1_fn, green_fn, px_res, modifier)
+    print(multi_band_file, out_fn, nir2_fn, green_fn, px_res, modifier)
     try:
         if (multi_band_file is not None) & (modifier is not None):
             print(multi_band_file[:-4] + "_b3_" + modifier + "_refl.tif")
             green_arr, prf, g_ndv = read_file(multi_band_file[:-4] + "_b3_" + modifier + "_refl.tif")
-            nir1_arr, _, nir1_ndv = read_file(multi_band_file[:-4] + "_b7_" + modifier + "_refl.tif")
-        elif (green_fn is not None) & (nir1_fn is not None):
+            nir2_arr, _, nir2_ndv = read_file(multi_band_file[:-4] + "_b8_" + modifier + "_refl.tif")
+        elif (green_fn is not None) & (nir2_fn is not None):
             green_arr, prf, g_ndv = read_file(green_fn)
-            nir1_arr, _, nir1_ndv = read_file(nir1_fn)
+            nir2_arr, _, nir2_ndv = read_file(nir2_fn)
         else:
             sys.exit("Check input files, missing proper input")
 
-        ndwi, ndwi_norm = calc_ndwi(green_arr, nir1_arr, g_ndv, nir1_ndv)
+        ndwi, ndwi_norm = calc_ndwi(green_arr, nir2_arr, g_ndv, nir2_ndv)
 
         # Write NDWI arrays to file
         try:
@@ -93,7 +93,7 @@ def main():
     if out_fn is None:
         out_fn='ndwi.tif'
 
-    nir1_fn=args.nir_band
+    nir2_fn=args.nir_band
     green_fn=args.green_band
     px_res=args.px_res
 
@@ -103,10 +103,10 @@ def main():
     else:
         modifier=mod + "_" + px_res[0]+px_res[-1]
 
-    print(in_fn, out_fn, nir1_fn, green_fn, px_res, modifier)
+    print(in_fn, out_fn, nir2_fn, green_fn, px_res, modifier)
     
     run(multi_band_file=in_fn, out_fn=out_fn, 
-        nir1_fn=nir1_fn, green_fn=green_fn, 
+        nir2_fn=nir2_fn, green_fn=green_fn, 
         px_res=px_res, modifier=modifier)
     
 if __name__ == "__main__":    
